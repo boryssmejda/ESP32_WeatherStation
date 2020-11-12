@@ -18,16 +18,13 @@
 
 #include <Wire.h>
 
-#include "BME280_wrapper.h"
-#include "BH1750_wrapper.h"
-#include "SoilHumiditySensor.h"
+#include "WeatherStation.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
 
 
-void printValues(Adafruit_BME280& bme);
-void printSoilHumidity();
+void printValues(MeasuredData& data);
 void print_wakeup_reason();
 
 TwoWire I2CBME = TwoWire(0);
@@ -45,14 +42,10 @@ void setup()
 
     Wire.begin();
 
-    BH1750_wrapper bh1750(&Wire);
-    bh1750.printLuminosity();
+    WeatherStation weatherStation(&Wire, soilHumSupplyPin, soilHumAnalogPin);
+    auto measuredData = weatherStation.requestData();
 
-    BME280_wrapper bme(&Wire);
-    bme.printAll();
-
-    SoilHumiditySensor soilHumSensor(soilHumSupplyPin, soilHumAnalogPin);
-    soilHumSensor.printSoilHumidity();
+    printValues(measuredData);
 
     esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
@@ -64,18 +57,28 @@ void loop()
 {
 }
 
-void printSoilHumidity()
+void printValues(MeasuredData& data)
 {
-    digitalWrite(soilHumSupplyPin, HIGH);
-    delay(5);
-    int soilAnalogVoltage = analogRead(soilHumAnalogPin);
-    digitalWrite(soilHumSupplyPin, LOW);
+    char temperatureBuff[25];
+    char pressureBuff[25];
+    char humidityBuff[25];
+    char soilHumBuf[25];
+    char luminosityBuff[25];
 
-    int soilHumidity = map(soilAnalogVoltage, 0, maxValueInWater, 0, 100);
+    snprintf(temperatureBuff, sizeof(temperatureBuff), "Temp: %.2f*C\r\n", data.temperature);
+    Serial.print(temperatureBuff);
 
-    Serial.print("Soil: ");
-    Serial.print(soilHumidity);
-    Serial.println("%");
+    snprintf(pressureBuff, sizeof(pressureBuff), "Pressure: %.2f hPa\r\n", data.pressure);
+    Serial.print(pressureBuff);
+
+    snprintf(humidityBuff, sizeof(humidityBuff), "Air Hum: %.2f%%\r\n", data.airHumidity);
+    Serial.print(humidityBuff);
+
+    snprintf(soilHumBuf, sizeof(soilHumBuf), "Soil Hum: %u%%\r\n", data.soilHumidity);
+    Serial.print(soilHumBuf);
+
+    snprintf(luminosityBuff, sizeof(luminosityBuff), "Lum: %ulx\r\n", data.luminosity);
+    Serial.print(luminosityBuff);
 }
 
 void print_wakeup_reason(){

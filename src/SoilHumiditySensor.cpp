@@ -19,7 +19,7 @@ SoilHumiditySensor::SoilHumiditySensor(uint8_t supplyPin, uint8_t analogPin, uin
      pinMode(_supplyPin, OUTPUT);
 }
 
-float SoilHumiditySensor::readSoilHumidity()
+uint16_t SoilHumiditySensor::readSoilHumidity()
 {
     uint16_t adcValue = readADCValue();
     uint16_t soilHumidity = map(adcValue, 0, MAX_MEASURED_SOIL_HUMIDITY, 0, 100);

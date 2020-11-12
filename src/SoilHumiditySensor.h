@@ -12,6 +12,6 @@ class SoilHumiditySensor
         uint16_t readADCValue() const;
     public:
         SoilHumiditySensor(uint8_t supplyPin, uint8_t analogPin, uint16_t measurementDelay = 5);
-        float readSoilHumidity();
+        uint16_t readSoilHumidity();
         void printSoilHumidity();
 };

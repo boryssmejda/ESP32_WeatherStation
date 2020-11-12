@@ -17,19 +17,20 @@
  ***************************************************************************/
 
 #include <Wire.h>
-#include <SPI.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-#include <BH1750.h>
+
+#include "BME280_wrapper.h"
+#include "BH1750_wrapper.h"
+#include "SoilHumiditySensor.h"
+
+#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
 
 
-void printValues();
-void printLuminosity();
+void printValues(Adafruit_BME280& bme);
 void printSoilHumidity();
+void print_wakeup_reason();
 
-Adafruit_BME280 bme; // I2C
 TwoWire I2CBME = TwoWire(0);
-BH1750 lightMeter(0x23);
 const int soilHumAnalogPin = 34;
 const int soilHumSupplyPin = 33;
 const int maxValueInWater = 2300;
@@ -37,77 +38,36 @@ unsigned long delayTime;
 
 void setup()
 {
-    pinMode(soilHumSupplyPin, OUTPUT);
+    Serial.begin(115200);
+    while(!Serial);
 
-    Serial.begin(9600);
-    while(!Serial);    // time to get serial running
-    Serial.println(F("BME280 test"));
+    print_wakeup_reason();
 
-    unsigned int status;
-    I2CBME.begin();
-    // default settings
-    //status = bme.begin();
-    // You can also pass in a Wire library object like &Wire2
-    status = bme.begin(0x76, &I2CBME);
-    if (!status) {
-        Serial.println("Could not find a valid BME280 sensor, check wiring, address, sensor ID!");
-        Serial.print("SensorID was: 0x"); Serial.println(bme.sensorID(),16);
-        Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-        Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-        Serial.print("        ID of 0x60 represents a BME 280.\n");
-        Serial.print("        ID of 0x61 represents a BME 680.\n");
-        while (1) delay(10);
-    }
+    Wire.begin();
 
-    while(lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE, 0x23, &I2CBME) != true)
-    {
-      Serial.print("Could not configure!");
-      delay(1000);
-    }
+    BH1750_wrapper bh1750(&Wire);
+    bh1750.printLuminosity();
 
-    delayTime = 3000;
-    esp_sleep_enable_timer_wakeup(3600000);
+    BME280_wrapper bme(&Wire);
+    bme.printAll();
+
+    SoilHumiditySensor soilHumSensor(soilHumSupplyPin, soilHumAnalogPin);
+    soilHumSensor.printSoilHumidity();
+
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+    Serial.flush();
+    esp_deep_sleep_start();
 }
-
 
 void loop()
 {
-    printValues();
-    printLuminosity();
-    printSoilHumidity();
-
-    Serial.println();
-    delay(delayTime);
-}
-
-
-void printValues() {
-    Serial.print("Temperature = ");
-    Serial.print(bme.readTemperature());
-    Serial.println(" *C");
-
-    Serial.print("Pressure = ");
-
-    Serial.print(bme.readPressure() / 100.0F);
-    Serial.println(" hPa");
-
-    Serial.print("Humidity = ");
-    Serial.print(bme.readHumidity());
-    Serial.println(" %");
-}
-
-void printLuminosity()
-{
-    float lux = lightMeter.readLightLevel();
-    Serial.print("Light: ");
-    Serial.print(lux);
-    Serial.println(" lx");
 }
 
 void printSoilHumidity()
 {
     digitalWrite(soilHumSupplyPin, HIGH);
-    delay(10);
+    delay(5);
     int soilAnalogVoltage = analogRead(soilHumAnalogPin);
     digitalWrite(soilHumSupplyPin, LOW);
 
@@ -115,5 +75,21 @@ void printSoilHumidity()
 
     Serial.print("Soil: ");
     Serial.print(soilHumidity);
-    Serial.println();
+    Serial.println("%");
+}
+
+void print_wakeup_reason(){
+    esp_sleep_wakeup_cause_t wakeup_reason;
+
+    wakeup_reason = esp_sleep_get_wakeup_cause();
+
+    switch(wakeup_reason)
+    {
+        case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+        case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+        case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+        case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+        case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+        default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+    }
 }

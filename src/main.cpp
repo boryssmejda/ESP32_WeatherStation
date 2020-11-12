@@ -22,16 +22,23 @@
 #include <Adafruit_BME280.h>
 #include <BH1750.h>
 
-Adafruit_BME280 bme; // I2C
-TwoWire I2CBME = TwoWire(0);
-BH1750 lightMeter(0x23);
-
-unsigned long delayTime;
 
 void printValues();
 void printLuminosity();
+void printSoilHumidity();
 
-void setup() {
+Adafruit_BME280 bme; // I2C
+TwoWire I2CBME = TwoWire(0);
+BH1750 lightMeter(0x23);
+const int soilHumAnalogPin = 34;
+const int soilHumSupplyPin = 33;
+const int maxValueInWater = 2300;
+unsigned long delayTime;
+
+void setup()
+{
+    pinMode(soilHumSupplyPin, OUTPUT);
+
     Serial.begin(9600);
     while(!Serial);    // time to get serial running
     Serial.println(F("BME280 test"));
@@ -58,7 +65,8 @@ void setup() {
       delay(1000);
     }
 
-    delayTime = 10000;
+    delayTime = 3000;
+    esp_sleep_enable_timer_wakeup(3600000);
 }
 
 
@@ -66,6 +74,9 @@ void loop()
 {
     printValues();
     printLuminosity();
+    printSoilHumidity();
+
+    Serial.println();
     delay(delayTime);
 }
 
@@ -83,8 +94,6 @@ void printValues() {
     Serial.print("Humidity = ");
     Serial.print(bme.readHumidity());
     Serial.println(" %");
-
-    Serial.println();
 }
 
 void printLuminosity()
@@ -93,4 +102,18 @@ void printLuminosity()
     Serial.print("Light: ");
     Serial.print(lux);
     Serial.println(" lx");
+}
+
+void printSoilHumidity()
+{
+    digitalWrite(soilHumSupplyPin, HIGH);
+    delay(10);
+    int soilAnalogVoltage = analogRead(soilHumAnalogPin);
+    digitalWrite(soilHumSupplyPin, LOW);
+
+    int soilHumidity = map(soilAnalogVoltage, 0, maxValueInWater, 0, 100);
+
+    Serial.print("Soil: ");
+    Serial.print(soilHumidity);
+    Serial.println();
 }

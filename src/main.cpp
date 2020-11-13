@@ -21,33 +21,72 @@
 #include "WeatherStation.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  5        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
 
 
 void printValues(MeasuredData& data);
-void print_wakeup_reason();
+esp_sleep_wakeup_cause_t print_wakeup_reason();
 
 TwoWire I2CBME = TwoWire(0);
 const int soilHumAnalogPin = 34;
 const int soilHumSupplyPin = 33;
 const int maxValueInWater = 2300;
 unsigned long delayTime;
+const int rainPin = 4;
+constexpr int rainDigPin = 15;
+
+RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR bool canExecuteRainInterrupt = true;
+
+void rainInterruptCallback()
+{
+    digitalWrite(2, HIGH);
+    canExecuteRainInterrupt = false;
+    bootCount = 0;
+}
 
 void setup()
 {
+    pinMode(rainPin, INPUT);
+    pinMode(rainDigPin, INPUT);
+    pinMode(2,OUTPUT);
+
+    digitalWrite(2, LOW);
+
     Serial.begin(115200);
     while(!Serial);
 
-    print_wakeup_reason();
+    auto wakeUpReason = print_wakeup_reason();
+    if(wakeUpReason == ESP_SLEEP_WAKEUP_EXT0)
+    {
+        rainInterruptCallback();
+        auto measuredVal = analogRead(rainPin);
+        Serial.print("Measured Val: ");
+        Serial.print(measuredVal);
+    }
+    else
+    {
+        Wire.begin();
 
-    Wire.begin();
+        WeatherStation weathSt(&Wire, soilHumSupplyPin, soilHumAnalogPin);
+        auto measuredData = weathSt.requestData();
 
-    WeatherStation weatherStation(&Wire, soilHumSupplyPin, soilHumAnalogPin);
-    auto measuredData = weatherStation.requestData();
+        printValues(measuredData);
 
-    printValues(measuredData);
+        esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+        if(canExecuteRainInterrupt)
+        {
+            esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
+        }
+
+        bootCount++;
+        if(bootCount == 3)
+        {
+            canExecuteRainInterrupt = true;
+            bootCount = 0;
+        }
+    }
 
     Serial.flush();
     esp_deep_sleep_start();
@@ -81,7 +120,7 @@ void printValues(MeasuredData& data)
     Serial.print(luminosityBuff);
 }
 
-void print_wakeup_reason(){
+esp_sleep_wakeup_cause_t print_wakeup_reason(){
     esp_sleep_wakeup_cause_t wakeup_reason;
 
     wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -95,4 +134,6 @@ void print_wakeup_reason(){
         case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
         default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
     }
+
+    return wakeup_reason;
 }

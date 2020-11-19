@@ -18,14 +18,18 @@
 
 #include <Wire.h>
 
-#include "WeatherStation.h"
+#include <BH1750.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <PMserial.h>
+#include "BluetoothSerial.h"
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  10        /* Time ESP32 will go to sleep (in seconds) */
 
-
-void printValues(MeasuredData& data);
-esp_sleep_wakeup_cause_t print_wakeup_reason();
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+    #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#endif
 
 TwoWire I2CBME = TwoWire(0);
 const int soilHumAnalogPin = 34;
@@ -35,68 +39,60 @@ unsigned long delayTime;
 const int rainPin = 4;
 constexpr int rainDigPin = 15;
 
+
+constexpr uint8_t BME280_DEFAULT_ADDRESS = 0x76;
+constexpr uint8_t BH1750_DEFAULT_ADDRESS = 0x23;
+// ================= Sensor Handlers =============================
+Adafruit_BME280 bme;
+BH1750 lightMeter;
+SerialPM pms(PMSx003, Serial2);
+BluetoothSerial SerialBT;
+
+// ===============================================================
+
+
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR bool canExecuteRainInterrupt = true;
 
-void rainInterruptCallback()
+void turnOnLedWhenRainDetected()
 {
     digitalWrite(2, HIGH);
     canExecuteRainInterrupt = false;
     bootCount = 0;
 }
 
+void printValues();
+
 void setup()
 {
-    pinMode(rainPin, INPUT);
-    pinMode(rainDigPin, INPUT);
-    pinMode(2,OUTPUT);
-
-    digitalWrite(2, LOW);
-
+    pinMode(27, OUTPUT);
     Serial.begin(115200);
     while(!Serial);
 
-    auto wakeUpReason = print_wakeup_reason();
-    if(wakeUpReason == ESP_SLEEP_WAKEUP_EXT0)
-    {
-        rainInterruptCallback();
-        auto measuredVal = analogRead(rainPin);
-        Serial.print("Measured Val: ");
-        Serial.print(measuredVal);
-    }
-    else
-    {
-        Wire.begin();
+    Serial.println("Starting measurements!");
+    Wire.begin();
 
-        WeatherStation weathSt(&Wire, soilHumSupplyPin, soilHumAnalogPin);
-        auto measuredData = weathSt.requestData();
+    SerialBT.begin("ESP32test"); //Bluetooth device name
+    Serial2.begin(9600);
 
-        printValues(measuredData);
-
-        esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
-
-        if(canExecuteRainInterrupt)
-        {
-            esp_sleep_enable_ext0_wakeup(GPIO_NUM_15, 0);
-        }
-
-        bootCount++;
-        if(bootCount == 3)
-        {
-            canExecuteRainInterrupt = true;
-            bootCount = 0;
-        }
-    }
-
-    Serial.flush();
-    esp_deep_sleep_start();
+    Serial.println("Starting assertion!");
+    assert(bme.begin(BME280_DEFAULT_ADDRESS, &Wire) != false);
+    Serial.println("Asserted BME280");
+    assert(lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE, BH1750_DEFAULT_ADDRESS, &Wire) != false);
+    pms.init();
+    Serial.println("Asserted BH1750. STARTING!!");
 }
 
 void loop()
 {
+    digitalWrite(27, HIGH);
+    delay(1000);
+    printValues();
+    digitalWrite(27, LOW);
+    delay(9000);
 }
 
-void printValues(MeasuredData& data)
+void printValues()
 {
     char temperatureBuff[25];
     char pressureBuff[25];
@@ -104,20 +100,23 @@ void printValues(MeasuredData& data)
     char soilHumBuf[25];
     char luminosityBuff[25];
 
-    snprintf(temperatureBuff, sizeof(temperatureBuff), "Temp: %.2f*C\r\n", data.temperature);
-    Serial.print(temperatureBuff);
+    snprintf(temperatureBuff, sizeof(temperatureBuff), "Temp: %.2f*C\r\n", bme.readTemperature());
+    SerialBT.print(temperatureBuff);
 
-    snprintf(pressureBuff, sizeof(pressureBuff), "Pressure: %.2f hPa\r\n", data.pressure);
-    Serial.print(pressureBuff);
+    snprintf(pressureBuff, sizeof(pressureBuff), "Pressure: %.2f hPa\r\n", bme.readPressure());
+    SerialBT.print(pressureBuff);
 
-    snprintf(humidityBuff, sizeof(humidityBuff), "Air Hum: %.2f%%\r\n", data.airHumidity);
-    Serial.print(humidityBuff);
+    snprintf(humidityBuff, sizeof(humidityBuff), "Air Hum: %.2f%%\r\n", bme.readHumidity()/ 100.0f);
+    SerialBT.print(humidityBuff);
 
-    snprintf(soilHumBuf, sizeof(soilHumBuf), "Soil Hum: %u%%\r\n", data.soilHumidity);
-    Serial.print(soilHumBuf);
+    snprintf(luminosityBuff, sizeof(luminosityBuff), "Lum: %ulx\r\n", (uint16_t)lightMeter.readLightLevel());
+    SerialBT.print(luminosityBuff);
 
-    snprintf(luminosityBuff, sizeof(luminosityBuff), "Lum: %ulx\r\n", data.luminosity);
-    Serial.print(luminosityBuff);
+    pms.read();
+    char airQualityBuffer[50];
+    snprintf(airQualityBuffer, 50, "PM1.0 %u | PM2.5 %u | PM10 %u [ug/m3]\r\n", pms.pm01, pms.pm25, pms.pm10);
+    SerialBT.println(airQualityBuffer);
+    SerialBT.println("==================\n");
 }
 
 esp_sleep_wakeup_cause_t print_wakeup_reason(){

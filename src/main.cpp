@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
+#include <ArduinoJson.h>
 #include <Wire.h>
 
 #include <BH1750.h>
@@ -85,22 +86,79 @@ void loop()
         // Your Domain name with URL path or IP address with path
         http.begin(serverName);
 
-        // Specify content-type header
-        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+        StaticJsonDocument<1024> doc;
 
-        // Prepare your HTTP POST request data
-        String httpRequestData = "api_key=" + apiKeyValue + "&sensor=" + sensorName
-                          + "&location=" + sensorLocation + "&value1=" + String(bme.readTemperature())
-                          + "&value2=" + String(bme.readHumidity()) + "&value3=" + String(bme.readPressure()/100.0F) + "";
+        doc["apiKeyValue"] = "tPmAT5Ab3j7F9";
+        doc["location"] = "Garden";
+
+        JsonArray data = doc.createNestedArray("data");
+
+        JsonObject jo_temperature = data.createNestedObject();
+        jo_temperature["value"] = bme.readTemperature();
+        jo_temperature["unit"] = "*C";
+        jo_temperature["sensor"] = "BME280";
+        jo_temperature["quantity"] = "Temperature";
+
+        JsonObject jo_pressure = data.createNestedObject();
+        jo_pressure["value"] = bme.readPressure() / 100.0;
+        jo_pressure["unit"] = "hPa";
+        jo_pressure["sensor"] = "BME280";
+        jo_pressure["quantity"] = "Pressure";
+
+        JsonObject jo_humidity = data.createNestedObject();
+        jo_humidity["value"] = bme.readHumidity();
+        jo_humidity["unit"] = "%";
+        jo_humidity["sensor"] = "BME280";
+        jo_humidity["quantity"] = "Humidity";
+
+        // Luminosity
+        JsonObject jo_luminosity = data.createNestedObject();
+        jo_luminosity["value"] = lightMeter.readLightLevel();
+        jo_luminosity["unit"] = "lx";
+        jo_luminosity["sensor"] = "BH1750";
+        jo_luminosity["quantity"] = "Luminosity";
+
+        //// PM1_0
+        pms.read();
+        JsonObject jo_pm1_0 = data.createNestedObject();
+        jo_pm1_0["value"] = pms.pm01;
+        jo_pm1_0["unit"] = "ug/m3";
+        jo_pm1_0["sensor"] = "PMSA003";
+        jo_pm1_0["quantity"] = "PM1.0";
+
+        // PM2_5
+        JsonObject jo_pm2_5 = data.createNestedObject();
+        jo_pm2_5["value"] = pms.pm25;
+        jo_pm2_5["unit"] = "ug/m3";
+        jo_pm2_5["sensor"] = "PMSA003";
+        jo_pm2_5["quantity"] = "PM2.5";
+
+        // PM10
+        JsonObject jo_pm10 = data.createNestedObject();
+        jo_pm10["value"] = pms.pm10;
+        jo_pm10["unit"] = "ug/m3";
+        jo_pm10["sensor"] = "PMSA003";
+        jo_pm10["quantity"] = "PM10";
+
+        char output[1024];
+        serializeJson(doc, output);
+
+        // Specify content-type header
+        http.addHeader("Content-Type", "application/json");
+
+        //// Prepare your HTTP POST request data
+        //String httpRequestData = "api_key=" + apiKeyValue + "&sensor=" + sensorName
+        //                  + "&location=" + sensorLocation + "&value1=" + String(bme.readTemperature())
+        //                  + "&value2=" + String(bme.readHumidity()) + "&value3=" + String(bme.readPressure()/100.0F) + "";
         Serial.print("httpRequestData: ");
-        Serial.println(httpRequestData);
+        Serial.println(output);
 
         // You can comment the httpRequestData variable above
         // then, use the httpRequestData variable below (for testing purposes without the BME280 sensor)
         //String httpRequestData = "api_key=tPmAT5Ab3j7F9&sensor=BME280&location=Office&value1=24.75&value2=49.54&value3=1005.14";
 
         // Send HTTP POST request
-        int httpResponseCode = http.POST(httpRequestData);
+        int httpResponseCode = http.POST(output);
 
         // If you need an HTTP request with a content type: text/plain
         //http.addHeader("Content-Type", "text/plain");
@@ -127,37 +185,20 @@ void loop()
     {
         Serial.println("WiFi Disconnected");
     }
+
     //Send an HTTP POST request every 30 seconds
     delay(30000);
 }
-//
-//void printValues()
-//{
-//    char temperatureBuff[25];
-//    char pressureBuff[25];
-//    char humidityBuff[25];
-//    char soilHumBuf[25];
-//    char luminosityBuff[25];
-//
-//    snprintf(temperatureBuff, sizeof(temperatureBuff), "Temp: %.2f*C\r\n", bme.readTemperature());
-//    Serial.print(temperatureBuff);
-//
-//    snprintf(pressureBuff, sizeof(pressureBuff), "Pressure: %.2f hPa\r\n", bme.readPressure());
-//    Serial.print(pressureBuff);
-//
-//    snprintf(humidityBuff, sizeof(humidityBuff), "Air Hum: %.2f%%\r\n", bme.readHumidity()/ 100.0f);
-//    Serial.print(humidityBuff);
-//
-//    snprintf(luminosityBuff, sizeof(luminosityBuff), "Lum: %ulx\r\n", (uint16_t)lightMeter.readLightLevel());
-//    Serial.print(luminosityBuff);
-//
-//    pms.read();
-//    char airQualityBuffer[50];
-//    snprintf(airQualityBuffer, 50, "PM1.0 %u | PM2.5 %u | PM10 %u [ug/m3]\r\n", pms.pm01, pms.pm25, pms.pm10);
-//    Serial.println(airQualityBuffer);
-//    Serial.println("==================\n");
-//}
-//
+
+void parse_json(const JsonArray& data, double value, const char* unit, const char* sensor, const char* quantity)
+{
+    JsonObject jo = data.createNestedObject();
+    jo["value"] = value;
+    jo["unit"] = unit;
+    jo["sensor"] = sensor;
+    jo["quantity"] = quantity;
+}
+
 //esp_sleep_wakeup_cause_t print_wakeup_reason(){
 //    esp_sleep_wakeup_cause_t wakeup_reason;
 //

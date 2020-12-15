@@ -2,15 +2,17 @@
 
 #include "BME280_wrapper.h"
 #include "BH1750_wrapper.h"
-#include "SoilHumiditySensor.h"
+#include <PMserial.h>
 
-struct MeasuredData
+struct WeatherConditions
 {
     float temperature;
     float pressure;
     float airHumidity;
-    uint16_t soilHumidity;
     uint16_t luminosity;
+    uint16_t pm01;
+    uint16_t pm25;
+    uint16_t pm10;
 };
 
 class WeatherStation
@@ -18,10 +20,9 @@ class WeatherStation
     private:
         BME280_wrapper _bme280;
         BH1750_wrapper _bh1750;
-        SoilHumiditySensor _soilHumSensor;
+        SerialPM _pms;
 
     public:
-        WeatherStation(TwoWire *i2c_handle, uint8_t _supplyPin, uint8_t _analogPin,
-                        uint16_t _measurementDelay = 5);
-        MeasuredData requestData();
+        WeatherStation(TwoWire *i2c_handle);
+        WeatherConditions requestWeatherConditions();
 };

@@ -1,22 +1,26 @@
 #include "WeatherStation.h"
 
-WeatherStation::WeatherStation(TwoWire *i2c_handle, uint8_t supplyPin, uint8_t analogPin,
-                        uint16_t measurementDelay)
+WeatherStation::WeatherStation(TwoWire *i2c_handle)
                         : _bme280{i2c_handle}
                         , _bh1750{i2c_handle}
-                        , _soilHumSensor{supplyPin, analogPin, measurementDelay}
+                        , _pms{PMSx003, Serial2}
 {
     assert(i2c_handle);
+    _pms.init();
 }
 
-MeasuredData WeatherStation::requestData()
+WeatherConditions WeatherStation::requestWeatherConditions()
 {
-    MeasuredData measuredData;
-    measuredData.temperature = _bme280.readTemperature();
-    measuredData.pressure = _bme280.readPressure();
-    measuredData.airHumidity = _bme280.readHumidity();
-    measuredData.soilHumidity = _soilHumSensor.readSoilHumidity();
-    measuredData.luminosity = _bh1750.measureLuminosity();
+    WeatherConditions weatherCond;
+    weatherCond.temperature = _bme280.readTemperature();
+    weatherCond.pressure = _bme280.readPressure();
+    weatherCond.airHumidity = _bme280.readHumidity();
+    weatherCond.luminosity = _bh1750.measureLuminosity();
 
-    return measuredData;
+    _pms.read();
+    weatherCond.pm01 = _pms.pm01;
+    weatherCond.pm25 = _pms.pm25;
+    weatherCond.pm10 = _pms.pm10;
+
+    return weatherCond;
 }

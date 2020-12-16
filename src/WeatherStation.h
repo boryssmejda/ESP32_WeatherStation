@@ -23,6 +23,8 @@ class WeatherStation
         SerialPM _pms;
 
     public:
-        WeatherStation(TwoWire *i2c_handle);
+        WeatherStation();
+        void init();
         WeatherConditions requestWeatherConditions();
+        void print();
 };

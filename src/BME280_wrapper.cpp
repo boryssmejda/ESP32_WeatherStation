@@ -1,9 +1,9 @@
 #include "BME280_wrapper.h"
 
-BME280_wrapper::BME280_wrapper(TwoWire *i2c_handle)
+
+void BME280_wrapper::init()
 {
-    assert(i2c_handle);
-    assert(_bme.begin(DEFAULT_ADDRESS, i2c_handle) != false);
+    assert(_bme.begin(DEFAULT_ADDRESS, &Wire) != false);
 }
 
 float BME280_wrapper::readTemperature()

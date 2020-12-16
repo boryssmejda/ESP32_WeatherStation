@@ -1,12 +1,15 @@
 #include "WeatherStation.h"
 
-WeatherStation::WeatherStation(TwoWire *i2c_handle)
-                        : _bme280{i2c_handle}
-                        , _bh1750{i2c_handle}
-                        , _pms{PMSx003, Serial2}
+WeatherStation::WeatherStation()
+                        : _pms{PMSx003, Serial2}
 {
-    assert(i2c_handle);
+}
+
+void WeatherStation::init()
+{
     _pms.init();
+    _bh1750.init();
+    _bme280.init();
 }
 
 WeatherConditions WeatherStation::requestWeatherConditions()
@@ -23,4 +26,17 @@ WeatherConditions WeatherStation::requestWeatherConditions()
     weatherCond.pm10 = _pms.pm10;
 
     return weatherCond;
+}
+
+void WeatherStation::print()
+{
+    auto conditions = requestWeatherConditions();
+
+    char weatherConditions[512];
+
+    sprintf(weatherConditions, "Temp: %.2f || Pressure: %.2f || Hum: %.2f", conditions.temperature, conditions.pressure, conditions.airHumidity);
+    sprintf(weatherConditions, "%s || PM01: %u || PM25: %u || PM10: %u", weatherConditions, conditions.pm01, conditions.pm25, conditions.pm10);
+    sprintf(weatherConditions, "%s || Lum: %u\r\n", weatherConditions, conditions.luminosity);
+
+    Serial.println(weatherConditions);
 }

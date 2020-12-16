@@ -1,20 +1,17 @@
 #include "Timestamp.h"
 #include "WifiWrapper.h"
 
-std::string Timestamp::getTimestamp()
+void Timestamp::getTimestamp(char timestamp[], int timestampSize)
 {
-    BoardTimeKeeper timeKeeper;
+    static BoardTimeKeeper timeKeeper;
     auto currentTime = timeKeeper.getCurrentTime();
 
-    return formatTime(currentTime);
+    formatTime(currentTime, timestamp, timestampSize);
 }
 
-std::string Timestamp::formatTime(const struct tm& currentTime)
+void Timestamp::formatTime(const struct tm& currentTime, char formattedTime[], int size)
 {
-    char formattedTime[128];
-    strftime(formattedTime, sizeof(formattedTime), "%d/%m/%Y %H:%M:%S", &currentTime);
-
-    return std::string{formattedTime};
+    strftime(formattedTime, size, "%d/%m/%Y %H:%M:%S", &currentTime);
 }
 
 BoardTimeKeeper::BoardTimeKeeper()

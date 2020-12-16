@@ -1,21 +1,17 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-#include <ArduinoJson.h>
 
-#include <BH1750.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-
-
-#include "time.h"
-#include "RTClib.h"
 #include "WeatherStation.h"
 #include "Timestamp.h"
+#include "SDCard.h"
+#include "JSONParser.h"
+#include <array>
 
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
+
 
 // ===============================================================
 
@@ -32,10 +28,14 @@ String apiKeyValue = "tPmAT5Ab3j7F9";
 String sensorName = "BME280";
 String sensorLocation = "Garden";
 
+WeatherConditions printWeatherConditions();
 void parse_json(const JsonArray& data, float value, const char* unit, const char* sensor, const char* quantity);
 void post_http_json_file(const std::string& serializedJson);
 std::string create_json_file();
 
+Timestamp timestamp;
+SDCard mySD;
+WeatherStation weatherStation;
 
 void setup()
 {
@@ -47,44 +47,33 @@ void setup()
 
     Serial.flush();
     Serial2.flush();
+
+    mySD.init();
+    weatherStation.init();
 }
 
 void loop()
 {
-    Timestamp timestamp;
-    Serial.println("--------------------------------");
-    Serial.println(timestamp.getTimestamp().c_str());
+    Serial.println("\r\n--------------------------------");
 
-    WeatherStation weatherStation(&Wire);
-    auto weatherCondtions = weatherStation.requestWeatherConditions();
+    char jsonSerializedOutput[1024];
+    char timestampBuffer[64];
 
-    char buff[64];
-    sprintf(buff, "Temp: %.2f", weatherCondtions.temperature);
-    Serial.println(buff);
+    timestamp.getTimestamp(timestampBuffer, sizeof(timestampBuffer));
 
-    sprintf(buff, "Pressure: %.2f", weatherCondtions.pressure);
-    Serial.println(buff);
+    JsonParser jsonParser(timestampBuffer, sizeof(timestampBuffer), weatherStation.requestWeatherConditions());
+    jsonParser.createFile(jsonSerializedOutput);
 
-    sprintf(buff, "Air hum: %.2f", weatherCondtions.airHumidity);
-    Serial.println(buff);
+    Serial.println(jsonSerializedOutput);
 
-    sprintf(buff, "Lum: %u", weatherCondtions.luminosity);
-    Serial.println(buff);
+    mySD.append(jsonSerializedOutput);
 
-    sprintf(buff, "PM 1.0: %u", weatherCondtions.pm01);
-    Serial.println(buff);
-
-    sprintf(buff, "PM2.5: %u", weatherCondtions.pm25);
-    Serial.println(buff);
-
-    sprintf(buff, "PM10: %u", weatherCondtions.pm10);
-    Serial.println(buff);
-
-    Serial.println("===============");
+    Serial.println("===============\r\n");
 
 
-    delay(1000);
+    delay(10000);
 }
+
 
 void parse_json(const JsonArray& data, float value, const char* unit, const char* sensor, const char* quantity)
 {

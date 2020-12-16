@@ -1,11 +1,10 @@
 #include "BH1750_wrapper.h"
 
-BH1750_wrapper::BH1750_wrapper(TwoWire *i2c_handle)
-    :_lightMeter{DEFAULT_ADDRESS}
-    {
-        assert(i2c_handle != nullptr);
-        assert(_lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE, DEFAULT_ADDRESS, i2c_handle) != false);
-    }
+
+void BH1750_wrapper::init()
+{
+    assert(_lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE, DEFAULT_ADDRESS, &Wire) != false);
+}
 
 uint16_t BH1750_wrapper::measureLuminosity()
 {

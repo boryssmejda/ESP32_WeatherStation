@@ -1,13 +1,12 @@
 #pragma once
-#include <string>
 #include "time.h"
 #include "RTClib.h"
 
 class Timestamp
 {
-        std::string formatTime(const struct tm& currentTime);
+        void formatTime(const struct tm& currentTime, char formattedTime[], int size);
     public:
-        std::string getTimestamp();
+        void getTimestamp(char timestamp[], int timestampSize);
 };
 
 class BoardTimeKeeper

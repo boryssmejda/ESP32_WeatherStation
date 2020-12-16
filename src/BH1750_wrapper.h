@@ -9,7 +9,7 @@ class BH1750_wrapper
         constexpr static int DEFAULT_ADDRESS = 0x23;
         BH1750 _lightMeter;
     public:
-        BH1750_wrapper(TwoWire *i2c_handle);
+        void init();
         uint16_t measureLuminosity();
         void printLuminosity();
 };

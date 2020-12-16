@@ -10,7 +10,7 @@ class BME280_wrapper
         Adafruit_BME280 _bme;
 
     public:
-        BME280_wrapper(TwoWire *i2c_handle);
+        void init();
         float readTemperature();
         float readPressure();
         float readHumidity();

@@ -23,9 +23,7 @@ void JsonParser::createFile(char jsonSerializedOutput[1024])
 {
     StaticJsonDocument<1024> doc;
 
-    auto weatherConditions = doc.createNestedObject("weatherConditions");
-
-    weatherConditions["timestamp"] = _timestamp;
+    doc["timestamp"] = _timestamp;
     JsonArray values = doc.createNestedArray("values");
 
     createJsonObject(values, {_weatherCondtions.temperature, "*C", "BME280", "Temperature"});
@@ -38,4 +36,21 @@ void JsonParser::createFile(char jsonSerializedOutput[1024])
     createJsonObject(values, {_weatherCondtions.pm10 , "ug/m3", "PMSA003", "PM10"});
 
     serializeJson(doc, jsonSerializedOutput, 1024);
+}
+
+void JsonParser::mergeWeatherConditionsWithHeader(char weatherConditions[1024])
+{
+    StaticJsonDocument<1024> doc;
+    doc["apiKeyValue"] = apiKeyValue;
+    doc["location"] = sensorLocation;
+
+    StaticJsonDocument<1024> json_weatherConditions;
+
+    assert(deserializeJson(json_weatherConditions, weatherConditions) == DeserializationError::Ok);
+
+    doc["weatherConditions"] = json_weatherConditions;
+
+    serializeJson(doc, weatherConditions, 1024);
+
+    Serial.print(weatherConditions);
 }

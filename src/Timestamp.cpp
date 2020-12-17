@@ -24,12 +24,10 @@ struct tm BoardTimeKeeper::getCurrentTime()
     WifiWrapper wifiWrapper;
     if(wifiWrapper.connect() != WifiWrapper::ConnectionStatus::SUCCESS)
     {
-        Serial.println("From RTC!");
         return getTimeFromRTC();
     }
     else
     {
-        Serial.println("From NTP");
         auto ntpTime = getTimeFromNTP();
         updateRTCTimeWithNTP(ntpTime);
 

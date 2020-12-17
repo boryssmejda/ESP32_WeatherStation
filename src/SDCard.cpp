@@ -15,44 +15,7 @@ void SDCard::init()
     }
 }
 
-void SDCard::write()
-{
-    File file = SD.open("/data.txt", FILE_WRITE);
-    if(!file)
-    {
-        Serial.println("Could not create file!");
-        return;
-    }
-
-    if(file.print("Hello Borys Smejda!"))
-    {
-        Serial.println("File written");
-    }
-    else
-    {
-        Serial.println("Write failed");
-    }
-
-    file.close();
-}
-
-void SDCard::read()
-{
-    File file = SD.open(filename);
-    if(!file)
-    {
-        Serial.println("Failed to open file for reading");
-        return;
-    }
-
-    Serial.print("Read from file: ");
-    while(file.available())
-    {
-        Serial.write(file.read());
-    }
-}
-
-void SDCard::append(char jsonSerialized[1024])
+void SDCard::save(char jsonSerialized[1024])
 {
     auto begin = getWeatherConditionsBegin();
     auto end = getWeatherConditionsEnd();
@@ -63,7 +26,7 @@ void SDCard::append(char jsonSerialized[1024])
     Serial.print("End: ");
     Serial.println(end);
 
-    File file = SD.open(filename, FILE_APPEND);
+    File file = SD.open(weatherConditions, FILE_APPEND);
     if(!file)
     {
         Serial.println("Failed to open file for appending");
@@ -87,20 +50,28 @@ void SDCard::updateRangeEnd(size_t newEnd)
     char buffer[8];
     sprintf(buffer, "%u", newEnd);
 
-    createFileWithContent(weatherConditionsEnd, buffer);
+    createFileWithContent(SDCard::end_filename, buffer);
+}
+
+void SDCard::updateRangeBeginning(size_t newBeginning)
+{
+    char buffer[8];
+    sprintf(buffer, "%u", newBeginning);
+
+    createFileWithContent(SDCard::begin_filename, buffer);
 }
 
 size_t SDCard::getWeatherConditionsBegin()
 {
     char rangeBeginningBuffer[8] = "0";
-    readContentFromFile(weatherConditionsBegin, rangeBeginningBuffer, sizeof(rangeBeginningBuffer));
+    readContentFromFile(SDCard::begin_filename, rangeBeginningBuffer, sizeof(rangeBeginningBuffer));
     return atoi(rangeBeginningBuffer);
 }
 
 size_t SDCard::getWeatherConditionsEnd()
 {
     char rangeEndBuffer[8] = "0";
-    readContentFromFile(weatherConditionsBegin, rangeEndBuffer, sizeof(rangeEndBuffer));
+    readContentFromFile(SDCard::end_filename, rangeEndBuffer, sizeof(rangeEndBuffer));
     return atoi(rangeEndBuffer);
 }
 
@@ -114,11 +85,10 @@ void SDCard::readContentFromFile(const char* filename, char* content, size_t con
         strcpy(content, "0");
     }
 
-    Serial.print("Read from file: ");
     file.readBytes(content, contentSize);
 }
 
-void SDCard::createFileWithContent(const char* filename, char* content)
+void SDCard::createFileWithContent(const char* filename, const char* content)
 {
     File file = SD.open(filename, FILE_WRITE);
     if(!file)
@@ -136,6 +106,55 @@ void SDCard::createFileWithContent(const char* filename, char* content)
         Serial.println("Write failed");
     }
     file.close();
+}
+
+void SDCard::readWeatherCondtions(char jsonSerialized[1024])
+{
+    File file = SD.open(weatherConditions);
+    if(!file)
+    {
+        Serial.println("Failed to open file for reading");
+        return;
+    }
+
+    auto begin = getWeatherConditionsBegin();
+    for(int i = 0; i < begin; ++i)
+    {
+        file.readBytesUntil('\r', jsonSerialized, 1024);
+    }
+
+    auto lastReadChar = file.readBytesUntil('\n', jsonSerialized, 1024);
+    jsonSerialized[lastReadChar - 1] = '\0'; // to overwrite \r in the end
+}
+
+bool SDCard::shouldDeleteWeatherCondtionsFile(int serverResponse)
+{
+    if(!isServerResponsePositive(serverResponse))
+    {
+        return false;
+    }
+
+    auto begin = getWeatherConditionsBegin();
+    updateRangeBeginning(begin + 1);
+    ++begin;
+
+    auto end = getWeatherConditionsEnd();
+
+    if(begin == end)
+    {
+        Serial.println("File is empty now! Deleting!");
+        return true;
+    }
+    else
+    {
+        Serial.println("File not empty! Not deleting yet!");
+        return false;
+    }
+}
+
+bool SDCard::isServerResponsePositive(int serverResponse)
+{
+    return (serverResponse >= 200 && serverResponse <= 299);
 }
 
 void SDCard::deleteFile(const char* filename)

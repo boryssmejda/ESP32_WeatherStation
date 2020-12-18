@@ -1,33 +1,35 @@
 #include "WifiWrapper.h"
 #include <WiFi.h>
 
+bool WifiWrapper::isConnected = false;
 
-WifiWrapper::ConnectionStatus WifiWrapper::connect()
+void WifiWrapper::connect()
 {
-    WiFi.begin(_ssid, _password);
-    return try_connecting(10, 500);
-}
+    WiFi.begin(WifiWrapper::_ssid, WifiWrapper::_password);
+    Serial.println("Connecting");
 
-WifiWrapper::ConnectionStatus WifiWrapper::try_connecting(int numOfTrials, int delayInMs)
-{
-    for(int i = 0; i < numOfTrials; ++i)
+    for(int i = 0; i < 10; ++i)
     {
-        if(isWifiConnected())
+        if(WiFi.status() == WL_CONNECTED)
         {
-            return ConnectionStatus::SUCCESS;
+            Serial.println("Connected!");
+            Serial.println("");
+            Serial.print("Connected to WiFi network with IP Address: ");
+            Serial.println(WiFi.localIP());
+            isConnected = true;
+            break;
         }
         else
         {
-            delay(delayInMs);
+            Serial.print(".");
+            delay(500);
         }
     }
-
-    return ConnectionStatus::FAILURE;
 }
 
 bool WifiWrapper::isWifiConnected()
 {
-    return WiFi.status() == WL_CONNECTED;
+    return isConnected;
 }
 
 void WifiWrapper::disconnect()

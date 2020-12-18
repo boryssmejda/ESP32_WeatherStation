@@ -1,15 +1,10 @@
 #include "HttpRequest.h"
-#include "WifiWrapper.h"
-
 #include <HTTPClient.h>
 
 httpRequestCode HttpRequest::sendWeatherConditions(char weatherConditions[1024])
 {
     Serial.println("TO BE SENT: ");
     Serial.println(weatherConditions);
-
-    WifiWrapper wifiConnection;
-    wifiConnection.connect();
 
     HTTPClient http;
 

@@ -21,8 +21,7 @@ BoardTimeKeeper::BoardTimeKeeper()
 
 struct tm BoardTimeKeeper::getCurrentTime()
 {
-    WifiWrapper wifiWrapper;
-    if(wifiWrapper.connect() != WifiWrapper::ConnectionStatus::SUCCESS)
+    if(WifiWrapper::isWifiConnected())
     {
         return getTimeFromRTC();
     }

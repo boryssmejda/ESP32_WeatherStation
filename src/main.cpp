@@ -3,23 +3,14 @@
 #include "Timestamp.h"
 #include "SDCard.h"
 #include "JSONParser.h"
+#include "WifiWrapper.h"
 
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
 #define TIME_TO_SLEEP  60        /* Time ESP32 will go to sleep (in seconds) */
 
-
-void initCommunicationProtocols()
-{
-    Serial.begin(115200);
-    while(!Serial);
-    Serial.flush();
-
-    Wire.begin();
-
-    Serial2.begin(9600);
-    Serial2.flush();
-}
+void try_sending_weatherConditions(char weatherConditons[1024]);
+void initCommunicationProtocols();
 
 Timestamp timestamp;
 SDCard mySD;
@@ -32,9 +23,7 @@ void setup()
     mySD.init();
     weatherStation.init();
 
-    mySD.deleteFile(SDCard::weatherConditions);
-    mySD.deleteFile(SDCard::begin_filename);
-    mySD.deleteFile(SDCard::end_filename);
+    WifiWrapper::connect();
 }
 
 void loop()
@@ -51,14 +40,25 @@ void loop()
 
     mySD.save(jsonSerializedOutput);
 
+    try_sending_weatherConditions(jsonSerializedOutput);
+
+    Serial.println("===============\r\n");
+
+
+    delay(10000);
+}
+
+
+void try_sending_weatherConditions(char weatherConditons[1024])
+{
     while(true)
     {
-        memset(jsonSerializedOutput, 0, sizeof(jsonSerializedOutput));
-        mySD.readWeatherCondtions(jsonSerializedOutput);
+        memset(weatherConditons, 0, 1024);
+        mySD.readWeatherCondtions(weatherConditons);
 
-        JsonParser::mergeWeatherConditionsWithHeader(jsonSerializedOutput);
+        JsonParser::mergeWeatherConditionsWithHeader(weatherConditons);
 
-        auto httpResponse = HttpRequest::sendWeatherConditions(jsonSerializedOutput);
+        auto httpResponse = HttpRequest::sendWeatherConditions(weatherConditons);
 
         if(HttpRequest::isRequestSuccessfull(httpResponse))
         {
@@ -77,9 +77,16 @@ void loop()
             break;
         }
     }
+}
 
-    Serial.println("===============\r\n");
+void initCommunicationProtocols()
+{
+    Serial.begin(115200);
+    while(!Serial);
+    Serial.flush();
 
+    Wire.begin();
 
-    delay(10000);
+    Serial2.begin(9600);
+    Serial2.flush();
 }

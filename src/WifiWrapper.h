@@ -2,10 +2,7 @@
 
 class WifiWrapper
 {
-    constexpr static char const* _ssid     = "FunBox2-F407";
-    constexpr static char const* _password = "1CEE231DEF373D27744763AEFF";
-
-    bool isWifiConnected();
+    static bool isConnected;
 
     public:
         enum class ConnectionStatus
@@ -14,10 +11,11 @@ class WifiWrapper
             FAILURE
         };
 
-        WifiWrapper::ConnectionStatus connect();
+        constexpr static char const* _ssid     = "FunBox2-F407";
+        constexpr static char const* _password = "1CEE231DEF373D27744763AEFF";
+
+        static void connect();
+        static bool isWifiConnected();
         void disconnect();
         void turnOff();
-
-    private:
-        WifiWrapper::ConnectionStatus try_connecting(int numOfTrials, int delayInMs);
 };

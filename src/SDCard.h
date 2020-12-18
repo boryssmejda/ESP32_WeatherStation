@@ -22,6 +22,11 @@ class SDCard
         void save(char jsonSerialized[1024]);
         void readWeatherCondtions(char jsonSerialized[1024]);
 
+        void incrementBegin();
+
         bool shouldDeleteWeatherCondtionsFile(int serverResponse);
         void deleteFile(const char* filename);
+
+        bool isBeginEqualEnd();
+        bool areAnyWeatherConditionsLeft();
 };

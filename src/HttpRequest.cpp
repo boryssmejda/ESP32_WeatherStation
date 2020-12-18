@@ -5,7 +5,7 @@
 
 httpRequestCode HttpRequest::sendWeatherConditions(char weatherConditions[1024])
 {
-    Serial.print("TO BE SENT: ");
+    Serial.println("TO BE SENT: ");
     Serial.println(weatherConditions);
 
     WifiWrapper wifiConnection;
@@ -34,4 +34,10 @@ httpRequestCode HttpRequest::sendWeatherConditions(char weatherConditions[1024])
     http.end();
 
     return httpResponseCode;
+}
+
+
+bool HttpRequest::isRequestSuccessfull(httpRequestCode requestReturnCode)
+{
+    return (requestReturnCode >= 200 && requestReturnCode <= 299);
 }

@@ -13,6 +13,7 @@ struct WeatherConditions
     uint16_t pm01;
     uint16_t pm25;
     uint16_t pm10;
+    float batteryVoltage;
 };
 
 class WeatherStation

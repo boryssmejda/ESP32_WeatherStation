@@ -34,6 +34,7 @@ void JsonParser::createFile(char jsonSerializedOutput[1024])
     createJsonObject(values, {_weatherCondtions.pm01, "ug/m3", "PMSA003", "PM1.0"});
     createJsonObject(values, {_weatherCondtions.pm25, "ug/m3", "PMSA003", "PM2.5"});
     createJsonObject(values, {_weatherCondtions.pm10 , "ug/m3", "PMSA003", "PM10"});
+    createJsonObject(values, {_weatherCondtions.batteryVoltage, "V", "Li-ion 18650", "Battery Voltage"});
 
     serializeJson(doc, jsonSerializedOutput, 1024);
 }
@@ -50,7 +51,9 @@ void JsonParser::mergeWeatherConditionsWithHeader(char weatherConditions[1024])
 
     doc["weatherConditions"] = json_weatherConditions;
 
-    serializeJson(doc, weatherConditions, 1024);
+    char output[1024];
+    serializeJson(doc, output, 1024);
 
-    Serial.print(weatherConditions);
+    memset(weatherConditions, 0, 1024);
+    memcpy(weatherConditions, output, 1024);
 }

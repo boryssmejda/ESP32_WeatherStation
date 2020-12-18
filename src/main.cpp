@@ -31,6 +31,10 @@ void setup()
 
     mySD.init();
     weatherStation.init();
+
+    mySD.deleteFile(SDCard::weatherConditions);
+    mySD.deleteFile(SDCard::begin_filename);
+    mySD.deleteFile(SDCard::end_filename);
 }
 
 void loop()
@@ -53,12 +57,23 @@ void loop()
         mySD.readWeatherCondtions(jsonSerializedOutput);
 
         JsonParser::mergeWeatherConditionsWithHeader(jsonSerializedOutput);
+
         auto httpResponse = HttpRequest::sendWeatherConditions(jsonSerializedOutput);
-        if(mySD.shouldDeleteWeatherCondtionsFile(httpResponse))
+
+        if(HttpRequest::isRequestSuccessfull(httpResponse))
         {
-            mySD.deleteFile(SDCard::weatherConditions);
-            mySD.deleteFile(SDCard::begin_filename);
-            mySD.deleteFile(SDCard::end_filename);
+            if(mySD.areAnyWeatherConditionsLeft())
+            {
+                delay(1000);
+                continue;
+            }
+            else
+            {
+                break;
+            }
+        }
+        else
+        {
             break;
         }
     }

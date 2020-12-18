@@ -127,6 +127,12 @@ void SDCard::readWeatherCondtions(char jsonSerialized[1024])
     jsonSerialized[lastReadChar - 1] = '\0'; // to overwrite \r in the end
 }
 
+void SDCard::incrementBegin()
+{
+    auto begin = getWeatherConditionsBegin();
+    updateRangeBeginning(begin+1);
+}
+
 bool SDCard::shouldDeleteWeatherCondtionsFile(int serverResponse)
 {
     if(!isServerResponsePositive(serverResponse))
@@ -159,6 +165,11 @@ bool SDCard::isServerResponsePositive(int serverResponse)
 
 void SDCard::deleteFile(const char* filename)
 {
+    if(!SD.exists(filename))
+    {
+        Serial.println("File does not exists! Cannot be deleted");
+        return;
+    }
     if(SD.remove(filename))
     {
         Serial.println("File deleted");
@@ -166,5 +177,30 @@ void SDCard::deleteFile(const char* filename)
     else
     {
         Serial.println("Delete failed");
+    }
+}
+
+bool SDCard::isBeginEqualEnd()
+{
+    auto begin = getWeatherConditionsBegin();
+    auto end = getWeatherConditionsEnd();
+
+    return (begin == end);
+}
+
+bool SDCard::areAnyWeatherConditionsLeft()
+{
+    incrementBegin();
+    if(isBeginEqualEnd())
+    {
+        deleteFile(SDCard::weatherConditions);
+        deleteFile(SDCard::begin_filename);
+        deleteFile(SDCard::end_filename);
+
+        return false;
+    }
+    else
+    {
+        return true;
     }
 }

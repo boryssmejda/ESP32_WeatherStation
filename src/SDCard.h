@@ -29,4 +29,5 @@ class SDCard
 
         bool isBeginEqualEnd();
         bool areAnyWeatherConditionsLeft();
+        static void logToFile(const char* message);
 };

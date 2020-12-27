@@ -1,5 +1,6 @@
 #include "Timestamp.h"
 #include "WifiWrapper.h"
+#include "SDCard.h"
 
 void Timestamp::getTimestamp(char timestamp[], int timestampSize)
 {
@@ -21,6 +22,7 @@ BoardTimeKeeper::BoardTimeKeeper()
 
 struct tm BoardTimeKeeper::getCurrentTime()
 {
+    SDCard::logToFile(__FUNCTION__);
     if(WifiWrapper::isWifiConnected())
     {
         return getTimeFromRTC();

@@ -204,3 +204,22 @@ bool SDCard::areAnyWeatherConditionsLeft()
         return true;
     }
 }
+
+void SDCard::logToFile(const char* message)
+{
+    File file = SD.open("/log.txt", FILE_APPEND);
+    if(!file)
+    {
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.println(message))
+    {
+        Serial.println("Message appended");
+    }
+    else
+    {
+        Serial.println("Append failed");
+    }
+    file.close();
+}

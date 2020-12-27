@@ -1,5 +1,6 @@
 #include "WeatherStation.h"
 #include "BatteryVoltage.h"
+#include "SDCard.h"
 
 WeatherStation::WeatherStation()
                         : _pms{PMSx003, Serial2}
@@ -11,10 +12,13 @@ void WeatherStation::init()
     _pms.init();
     _bh1750.init();
     _bme280.init();
+
+    SDCard::logToFile("Initialisation done for Weather Station");
 }
 
 WeatherConditions WeatherStation::requestWeatherConditions()
 {
+    SDCard::logToFile(__FUNCTION__);
     WeatherConditions weatherCond;
     weatherCond.temperature = _bme280.readTemperature();
     weatherCond.pressure = _bme280.readPressure();
@@ -27,6 +31,8 @@ WeatherConditions WeatherStation::requestWeatherConditions()
     weatherCond.pm10 = _pms.pm10;
 
     weatherCond.batteryVoltage = battery::BatteryVoltage::measureVoltage();
+
+    SDCard::logToFile("Read weather conditions!");
 
     return weatherCond;
 }

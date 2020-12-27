@@ -34,7 +34,7 @@ CREATE TABLE Measurements (
     ID INT NOT NULL AUTO_INCREMENT,
     measured_value DOUBLE NOT NULL,
     measurement_unit_id INT NOT NULL,
-    reading_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    reading_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sensor_id INT NOT NULL,
     measured_quantity_id INT NOT NULL,
     sensor_location_id INT NOT NULL,

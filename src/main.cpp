@@ -15,7 +15,6 @@ Timestamp timestamp;
 SDCard mySD;
 WeatherStation weatherStation;
 
-unsigned long lastTime = 0;
 
 void setup()
 {
@@ -24,9 +23,12 @@ void setup()
     initCommunicationProtocols();
 
     mySD.init();
+    SDCard::logToFile("Initialized SD card!");
     weatherStation.init();
+    SDCard::logToFile("Weather Station Initialized!");
 
     WifiWrapper::connect();
+    SDCard::logToFile("Wifi connected!");
 
     print_wakeup_reason();
 
@@ -36,13 +38,20 @@ void setup()
     char timestampBuffer[64];
 
     timestamp.getTimestamp(timestampBuffer, sizeof(timestampBuffer));
+    SDCard::logToFile(timestampBuffer);
 
     JsonParser jsonParser(timestampBuffer, sizeof(timestampBuffer), weatherStation.requestWeatherConditions());
     jsonParser.createFile(jsonSerializedOutput);
 
+    SDCard::logToFile(jsonSerializedOutput);
+
     mySD.save(jsonSerializedOutput);
 
+    SDCard::logToFile("Trying to send weather conditions!");
+
     try_sending_weatherConditions(jsonSerializedOutput);
+
+    SDCard::logToFile("Weather conditions were sent!");
 
     Serial.println("===============\r\n");
 }
@@ -62,6 +71,10 @@ void try_sending_weatherConditions(char weatherConditons[1024])
         JsonParser::mergeWeatherConditionsWithHeader(weatherConditons);
 
         auto httpResponse = HttpRequest::sendWeatherConditions(weatherConditons);
+
+        char buff[100];
+        sprintf(buff, "Http Response: %d", httpResponse);
+        SDCard::logToFile(buff);
 
         if(HttpRequest::isRequestSuccessfull(httpResponse))
         {

@@ -14,6 +14,11 @@ Timer::~Timer()
 
     auto delta_time = _timeToSleep.count() - diff.count();
 
+    if(delta_time < 10)
+    {
+        delta_time = 10;
+    }
+
     esp_sleep_enable_timer_wakeup(delta_time * uS_TO_S_FACTOR);
     esp_deep_sleep_start();
 }

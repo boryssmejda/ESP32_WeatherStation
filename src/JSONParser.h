@@ -23,7 +23,7 @@ class JsonParser
 
     constexpr static const char* apiKeyValue = "tPmAT5Ab3j7F9";
     constexpr static const char* sensorName = "BME280";
-    constexpr static const char* sensorLocation = "Garden";
+    constexpr static const char* sensorLocation = "Tuszyn";
 
     public:
         JsonParser(char* timestamp, size_t timestampSize, const WeatherConditions& weatherConditions);

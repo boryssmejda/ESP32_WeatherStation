@@ -1,11 +1,13 @@
 # ======================= SENSORS_LOCATIONS =========================================
 
 INSERT INTO Sensors_locations(sensor_location_name)
-    VALUES ("Garden");
+    VALUES ("Tuszyn");
 
 INSERT INTO Sensors_locations(sensor_location_name)
-    VALUES ("Office");
+    VALUES ("Andrespol");
 
+INSERT INTO Sensors_locations(sensor_location_name)
+    VALUES ("Bukowiec");
 
 # ============================ SENSORS =================================================
 
@@ -17,6 +19,9 @@ INSERT INTO Sensors(sensor_name)
 
 INSERT INTO Sensors(sensor_name)
     VALUES ("PMSA003");
+
+INSERT INTO Sensors(sensor_name)
+    VALUES("Li-ion 18650");
 
 # ================================ MEASURED_QUANTITIES ====================================
 
@@ -41,6 +46,9 @@ INSERT INTO Measured_quantities(measured_quantity_name)
 INSERT INTO Measured_quantities(measured_quantity_name)
     VALUES ("PM10");
 
+INSERT INTO Measured_quantities(measured_quantity_name)
+    VALUES ("Battery Voltage");
+
 
 # ========================== MEASUREMENT_UNITS ===========================
 
@@ -58,3 +66,6 @@ INSERT INTO Measurement_units(unit_name)
 
 INSERT INTO Measurement_units(unit_name)
     VALUES ("ug/m3");
+
+INSERT INTO Measurement_units(unit_name)
+    VALUES ("V");

@@ -6,12 +6,12 @@ CREATE TABLE Sensors (
     UNIQUE(sensor_name)
 );
 
-CREATE TABLE Sensors_locations (
-    sensor_location_id INT NOT NULL AUTO_INCREMENT,
-    sensor_location_name VARCHAR(100) NOT NULL,
+CREATE TABLE Boards_locations (
+    board_location_id INT NOT NULL AUTO_INCREMENT,
+    board_location_name VARCHAR(100) NOT NULL,
 
-    PRIMARY KEY(sensor_location_id),
-    UNIQUE(sensor_location_name)
+    PRIMARY KEY(board_location_id),
+    UNIQUE(board_location_name)
 );
 
 CREATE TABLE Measured_quantities (
@@ -37,11 +37,19 @@ CREATE TABLE Measurements (
     reading_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     sensor_id INT NOT NULL,
     measured_quantity_id INT NOT NULL,
-    sensor_location_id INT NOT NULL,
+    board_location_id INT NOT NULL,
 
     PRIMARY KEY(ID),
-    FOREIGN KEY (measurement_unit_id)   REFERENCES Measurement_units(measurement_unit_id),
-    FOREIGN KEY (sensor_id)             REFERENCES Sensors(sensor_id),
-    FOREIGN KEY (measured_quantity_id)  REFERENCES Measured_quantities(measured_quantity_id),
-    FOREIGN KEY (sensor_location_id)    REFERENCES Sensors_locations(sensor_location_id)
+
+    FOREIGN KEY (measurement_unit_id)
+        REFERENCES Measurement_units(measurement_unit_id),
+
+    FOREIGN KEY (sensor_id)
+        REFERENCES Sensors(sensor_id),
+
+    FOREIGN KEY (measured_quantity_id)
+        REFERENCES Measured_quantities(measured_quantity_id),
+
+    FOREIGN KEY (board_location_id)
+        REFERENCES Boards_locations(board_location_id)
 );

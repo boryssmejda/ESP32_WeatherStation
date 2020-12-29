@@ -1,15 +1,14 @@
-# ======================= SENSORS_LOCATIONS =========================================
-
-INSERT INTO Sensors_locations(sensor_location_name)
+# ==================== Boards_locations ================#
+INSERT INTO Boards_locations(board_location_name)
     VALUES ("Tuszyn");
 
-INSERT INTO Sensors_locations(sensor_location_name)
+INSERT INTO Boards_locations(board_location_name)
     VALUES ("Andrespol");
 
-INSERT INTO Sensors_locations(sensor_location_name)
+INSERT INTO Boards_locations(board_location_name)
     VALUES ("Bukowiec");
 
-# ============================ SENSORS =================================================
+# ==================== SENSORS ========================#
 
 INSERT INTO Sensors(sensor_name)
     VALUES ("BME280");
@@ -23,7 +22,7 @@ INSERT INTO Sensors(sensor_name)
 INSERT INTO Sensors(sensor_name)
     VALUES("Li-ion 18650");
 
-# ================================ MEASURED_QUANTITIES ====================================
+# ==================== MEASURED_QUANTITIES =============#
 
 INSERT INTO Measured_quantities(measured_quantity_name)
     VALUES ("Temperature");
@@ -50,7 +49,7 @@ INSERT INTO Measured_quantities(measured_quantity_name)
     VALUES ("Battery Voltage");
 
 
-# ========================== MEASUREMENT_UNITS ===========================
+# ==================== MEASUREMENT_UNITS ================#
 
 INSERT INTO Measurement_units(unit_name)
     VALUES ("*C");
